@@ -206,7 +206,7 @@ func (rule Rule) ToGraphiteName(taggedMetric api.TaggedMetric) (GraphiteMetric, 
 		}
 	}
 
-	interpolated, err := interpolateTags(rule.raw.Pattern, mergedTagSet, true)
+	interpolated, err := interpolateTags(rule.raw.Pattern, mergedTagSet, false)
 	if err != nil {
 		return "", err
 	}
