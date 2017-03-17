@@ -26,7 +26,10 @@ import (
 var Timeshift = function.MakeFunction(
 	"transform.timeshift",
 	func(expression function.Expression, duration time.Duration, context function.EvaluationContext) (function.Value, error) {
-		newContext := context.WithTimerange(context.Timerange().Shift(duration))
+                //Since TimeShift Duration already applied in query/command.go for select command.
+                //Here need not to do it again
+		//newContext := context.WithTimerange(context.Timerange().Shift(duration))
+		newContext := context.WithTimerange(context.Timerange())
 		return expression.Evaluate(newContext)
 	},
 )

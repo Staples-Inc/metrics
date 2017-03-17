@@ -18,6 +18,8 @@ import (
 	"fmt"
 	"regexp"
 	"sort"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/square/metrics/api"
@@ -196,10 +198,49 @@ type QueryResult struct {
 
 // Execute performs the query represented by the given query string, and returs the result.
 func (cmd *SelectCommand) Execute(context ExecutionContext) (Result, error) {
+
+	//Check transform.timeShift function is present in query
+        //if so, apply shift duration for user request start and end, which will make sure to calculate the
+        //resolution based on the configuration
+	timeSDuration := 0
+	var timeShiftDuration time.Duration
+	for _, exp := range cmd.Expressions {
+		tmpStr := exp.ExpressionString(function.StringMemoization)
+		//fmt.Println(" tmpStr =", tmpStr)
+		//nameStr := exp.ExpressionString(function.StringName)
+		//fmt.Println(" nameStr =", nameStr)
+		if strings.Contains(tmpStr, "transform.timeshift") == true {
+			splitStr := strings.SplitAfter(tmpStr, "Duration:")
+			//fmt.Println("splitStr = ",splitStr[1])
+			replaceStr := strings.NewReplacer("}", "", ")", "")
+			rStr := replaceStr.Replace(splitStr[1])
+			//fmt.Println(" len(rStr) = ",len(rStr))
+			trimStr := strings.Trim(rStr, " ")
+			//fmt.Println(" len(trimStr) = ",len(trimStr))
+			timeSDuration, _ = strconv.Atoi(trimStr)
+			timeShiftDuration = time.Duration(timeSDuration)
+
+			//fmt.Println("timeShiftDuration = ",timeShiftDuration)
+		}
+	}
+
 	userTimerange, err := api.NewSnappedTimerange(cmd.Context.Start, cmd.Context.End, cmd.Context.Resolution)
 	if err != nil {
 		return Result{}, err
 	}
+
+	//fmt.Println(" query command Select Command userTimerange =",userTimerange)
+
+	if int64(timeShiftDuration) != 0 {
+
+		//fmt.Println("timeShiftDuration/time.Millisecond =", int64(timeShiftDuration/time.Millisecond))
+		//fmt.Println(" start=",cmd.Context.Start)
+		//fmt.Println(" start+shift=",cmd.Context.Start+int64(timeShiftDuration/time.Millisecond))
+		userTimerange = userTimerange.Shift(timeShiftDuration)
+	}
+
+	//fmt.Println(" query command Select Command newuserTimerange =",userTimerange)
+
 	slotLimit := context.SlotLimit
 	defaultLimit := 1000
 	if slotLimit == 0 {
