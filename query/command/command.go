@@ -200,8 +200,8 @@ type QueryResult struct {
 func (cmd *SelectCommand) Execute(context ExecutionContext) (Result, error) {
 
 	//Check transform.timeShift function is present in query
-        //if so, apply shift duration for user request start and end, which will make sure to calculate the
-        //resolution based on the configuration
+	//if so, apply shift duration for user request start and end, which will make sure to calculate the
+	//resolution based on the configuration
 	timeSDuration := 0
 	var timeShiftDuration time.Duration
 	for _, exp := range cmd.Expressions {
@@ -210,15 +210,19 @@ func (cmd *SelectCommand) Execute(context ExecutionContext) (Result, error) {
 		//nameStr := exp.ExpressionString(function.StringName)
 		//fmt.Println(" nameStr =", nameStr)
 		if strings.Contains(tmpStr, "transform.timeshift") == true {
-			splitStr := strings.SplitAfter(tmpStr, "Duration:")
-			//fmt.Println("splitStr = ",splitStr[1])
-			replaceStr := strings.NewReplacer("}", "", ")", "")
-			rStr := replaceStr.Replace(splitStr[1])
-			//fmt.Println(" len(rStr) = ",len(rStr))
-			trimStr := strings.Trim(rStr, " ")
-			//fmt.Println(" len(trimStr) = ",len(trimStr))
-			timeSDuration, _ = strconv.Atoi(trimStr)
-			timeShiftDuration = time.Duration(timeSDuration)
+			if strings.Contains(tmpStr, "Duration:") == true {
+				splitStr := strings.SplitAfter(tmpStr, "Duration:")
+				//fmt.Println("splitStr = ",splitStr[1])
+				replaceStr := strings.NewReplacer("}", "", ")", "")
+				rStr := replaceStr.Replace(splitStr[1])
+				//fmt.Println(" len(rStr) = ",len(rStr))
+				trimStr := strings.Trim(rStr, " ")
+				//fmt.Println(" len(trimStr) = ",len(trimStr))
+				timeSDuration, _ = strconv.Atoi(trimStr)
+				timeShiftDuration = time.Duration(timeSDuration)
+			} else {
+				timeShiftDuration = time.Duration(0)
+			}
 
 			//fmt.Println("timeShiftDuration = ",timeShiftDuration)
 		}
